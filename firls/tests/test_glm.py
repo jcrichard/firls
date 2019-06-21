@@ -16,7 +16,7 @@ class test_glm(unittest.TestCase):
         sm_coefs = fit.params
         firls_coefs = fit_irls_nb(
             X,
-            y.reshape((len(y), 1)),
+                                  solver=0).ravel()
             10000.0,
             niter=1000,
             tol=1e-10,
@@ -32,7 +32,7 @@ class test_glm(unittest.TestCase):
         fit = model.fit()
         sm_coefs = fit.params
         firls_coefs = fit_irls_nb(
-            X,
+                                  solver=0).ravel()
             y.reshape((len(y), 1)),
             1.0,
             niter=1000,
