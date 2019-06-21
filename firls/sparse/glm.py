@@ -31,7 +31,7 @@ def _intercept_dot(w, X):
     return w, c, z
 
 
-def _glm_loss_and_grad(w, X, y, alpha=0, familly="binomial", r=1, sample_weight=None):
+def _glm_loss_and_grad(w, X, y, alpha=0, familly="binomial", r=1, sample_weight=None,p_shrinkage = 1e-6):
     """Computes the logistic loss and gradient.
     """
     n_samples, n_features = X.shape
@@ -47,7 +47,7 @@ def _glm_loss_and_grad(w, X, y, alpha=0, familly="binomial", r=1, sample_weight=
         out = np.sum(sample_weight * (y - mu) ** 2) + 0.5 * alpha * np.dot(w.T, w)
         z0 = -sample_weight * (y - mu)
     elif familly == "binomial":
-        p = inverse_logit(Xw_c)
+        p = np.maximum(np.minimum( inverse_logit(Xw_c),1-p_shrinkage),p_shrinkage)
         out = -np.sum(sample_weight * (y * np.log(p) + (1 - y) * np.log(1 - p))) + 0.5 * alpha * np.dot(w.T, w)
         z0 = -sample_weight * (y - p)
     elif familly == "poisson":
@@ -56,7 +56,7 @@ def _glm_loss_and_grad(w, X, y, alpha=0, familly="binomial", r=1, sample_weight=
         z0 = sample_weight * (mu - y)
     elif familly == "negativebinomial":
         mu = np.exp(Xw_c)
-        p = mu / (mu + r)
+        p = np.maximum(np.minimum( mu / (mu + r), 1 - p_shrinkage), p_shrinkage)
         p_tilde = (y + r) * p
         out = -np.sum(
             sample_weight * (y * Xw_c - (y + r) * np.log(r + mu))
