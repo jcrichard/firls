@@ -8,7 +8,7 @@ def simulate_supervised_poisson(n, p):
     X = np.random.normal(size=(n, p))
     beta = np.round(np.random.normal(scale=0.3, size=(p, 1)), 1)
     mu = np.exp(X @ beta).flatten()
-    y = np.random.poisson(lam=mu)*1.0
+    y = np.random.poisson(lam=mu) * 1.0
     return y, X, beta
 
 
@@ -18,5 +18,5 @@ def simulate_supervised_negative_binomiale(n, p, r):
     beta = np.round(np.random.normal(scale=0.3, size=(p, 1)), 1)
     mu = np.exp(X @ beta).flatten()
     p = mu / (mu + r)
-    y = np.random.negative_binomial(r, p)*1.0
+    y = np.random.negative_binomial(r, p) * 1.0
     return y, X, beta

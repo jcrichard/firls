@@ -10,7 +10,9 @@ def soft_threshold(x, s):
     return np.sign(x) * np.maximum(np.abs(x) - s, 0)
 
 
-@njit("float64[:,:](float64[:,:],float64[:,:],optional(float64[:,:]) ,optional(float64[:,:]),float64,int64,float64)")
+@njit(
+    "float64[:,:](float64[:,:],float64[:,:],optional(float64[:,:]) ,optional(float64[:,:]),float64,int64,float64)"
+)
 def ccd_pwls(X, y, W=None, bounds=None, lamda=0.0, max_iters=1000, tol=1e-10):
     """ Coordinate descent algorithm for penalized weighted least squared.
     """
