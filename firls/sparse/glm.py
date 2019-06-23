@@ -31,7 +31,7 @@ def _intercept_dot(w, X):
     return w, c, z
 
 
-def _glm_loss_and_grad(w, X, y, alpha=0, familly="binomial", r=1, sample_weight=None,p_shrinkage = 1e-6):
+def _glm_loss_and_grad(w, X, y,  familly="binomial", alpha=0,r=1, sample_weight=None,p_shrinkage = 1e-6):
     """Computes the logistic loss and gradient.
     """
     n_samples, n_features = X.shape
