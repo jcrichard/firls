@@ -72,6 +72,7 @@ class SparseGLM(BaseEstimator, LinearClassifierMixin):
                 args=(X, y, self.family, self.lambda_l2),
                 **self.solver_kwargs
             )
+            self.info_=info
 
         elif self.solver == "tcn":
             coef, nfeval, rc = optimize.fmin_tcn(
@@ -81,8 +82,8 @@ class SparseGLM(BaseEstimator, LinearClassifierMixin):
                 args=(X, y, self.family, self.lambda_l2),
                 **self.solver_kwargs
             )
-            info = RCSTRINGS[1+rc]
 
+        self.loss_value_ ,self.grad_value_ = _glm_loss_and_grad(coef, X, y, self.family, self.lambda_l2)
         self.loss_value_ ,self.grad_value_ = _glm_loss_and_grad(coef, X, y, self.family, self.lambda_l2)
         if self.fit_intercept:
             self.coef_ = coef[:-1]
