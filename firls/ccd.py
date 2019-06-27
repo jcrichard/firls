@@ -52,9 +52,15 @@ def ccd_pwls(
     beta_old = beta.copy()
     XtX = X.T @ X
     Xty = X.T @ y
-
+    active_set = list(range(p))
     for i in range(max_iters):
-        for j in range(p):
+        for j in active_set:
+
+            if len(active_set) == 0:
+                beta = beta * 0
+                beta_old = beta
+                break
+
             h = XtX @ beta
             rho = Xty[j] - (h[j] - beta[j] * sum_sq_X[j])
             if (fit_intercept) and (j == 0):
@@ -63,8 +69,9 @@ def ccd_pwls(
                 beta[j] = soft_threshold(rho[0], lambda_l1) / (sum_sq_X[j] + lambda_l2)
             if bounds is not None:
                 beta[j] = np.minimum(np.maximum(beta[j], bounds[j, 0]), bounds[j, 1])
-
-        if np.linalg.norm(beta_old - beta,2)  < tol:
+            if abs(beta[j, 0]) <= 1e-10:
+                active_set.remove(j)
+        if np.linalg.norm(beta_old - beta, 2) < tol:
             break
         beta_old = beta.copy()
 

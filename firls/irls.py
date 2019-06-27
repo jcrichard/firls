@@ -1,7 +1,7 @@
 from numba import njit
 from numba.types import float64, int64, unicode_type, boolean
 import numpy as np
-from firls.ccd import ccd_pwls
+from firls.ccd import ccd_pwls, add_constant
 
 
 @njit(
@@ -46,7 +46,7 @@ def fit_irls(
     max_iters=1000,
     tol=1e-10,
     p_shrinkage=1e-10,
-    solver="firls",
+    solver="inv",
 ):
     """
     Fit the negative binomial regression
@@ -56,6 +56,10 @@ def fit_irls(
     w = np.ascontiguousarray(np.zeros((p + fit_intercept * 1, 1)))
     w_old = np.ascontiguousarray(np.zeros((p + fit_intercept * 1, 1)))
     mu = (y + np.mean(y)) / 2
+    if lambda_l2 > 0.0:
+        I = np.eye(p + fit_intercept * 1)
+        if fit_intercept:
+            I[0, 0] = 0
 
     for i in range(max_iters):
 
@@ -64,10 +68,20 @@ def fit_irls(
         z = np.expand_dims(Wz[:, 1], 1)
 
         if solver == "inv":
-            X_tilde = X * W ** 0.5
+            if fit_intercept:
+                X_tilde = add_constant(X) * W ** 0.5
+            else:
+                X_tilde = X * W ** 0.5
             z_tilde = z * W ** 0.5
-            w = np.linalg.inv(X_tilde.T @ X_tilde) @ X_tilde.T @ z_tilde
-        elif solver == "firls":
+            if lambda_l2 > 0.0:
+                w = (
+                    np.linalg.inv(X_tilde.T @ X_tilde + lambda_l2 * I)
+                    @ X_tilde.T
+                    @ z_tilde
+                )
+            else:
+                w = np.linalg.inv(X_tilde.T @ X_tilde) @ X_tilde.T @ z_tilde
+        elif solver == "ccd":
             w = ccd_pwls(
                 X,
                 z,

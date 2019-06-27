@@ -1,5 +1,3 @@
+from firls.sklearn import SparseGLM, GLM
 
-from firls.sklearn import SparseGLM,GLM
-
-__all__ = ['SparseGLM',
-           'GLM']
+__all__ = ["SparseGLM", "GLM"]
