@@ -1,43 +1,118 @@
-from sklearn.linear_model.base import LinearClassifierMixin, BaseEstimator
-from sklearn.utils.validation import check_X_y, check_array, check_consistent_length
 import numpy as np
-from firls.glm import fit_irls_nb
-from firls.sparse.glm import _glm_loss_and_grad, safe_sparse_dot
 from scipy import optimize
-from joblib import cpu_count, Parallel
-from scipy.optimize.tnc import RCSTRINGS
+from sklearn.linear_model.base import LinearClassifierMixin, BaseEstimator
+from sklearn.utils.validation import check_X_y, check_array
+
+from firls.irls import fit_irls
+from firls.loss_and_grad import _glm_loss_and_grad, safe_sparse_dot
+
 
 class GLM(BaseEstimator, LinearClassifierMixin):
-     def __init__(self, lambda_l1=0, lambda_l2=0,r=1,
-                  fit_intercept=True, family="negativebinomial",
-                    solver='firls', max_iter=10000,tol=1e-8,p_shrinkage=1e-10
-                 ):
+    def __init__(
+        self,
+        lambda_l1=0,
+        lambda_l2=0,
+        r=1,
+        fit_intercept=True,
+        family="negativebinomial",
+        bounds=None,
+        solver="firls",
+        max_iters=10000,
+        tol=1e-8,
+        p_shrinkage=1e-10,
+    ):
+        """Generalized linear model with L1 and L2 penalties. Support box constraints.
 
-         self.lambda_l1 = lambda_l1
-         self.lambda_l2 = lambda_l2
-         self.r = r
-         self.family = family
-         self.fit_intercept = fit_intercept
-         self.tol = tol
-         self.max_iter = max_iter
-         self.solver = solver
-         self.p_shrinkage = p_shrinkage
+            Minimizes the objective function::
 
+            ||y - Xw - c||^2_2
+            + lambda_l1  ||w||_1
+            + 0.5 * lambda_l2 ||w||^2_2
 
-     def fit(self, X, y):
-         X = np.ascontiguousarray(X)
-         y = np.ascontiguousarray(y)
-         X, y = check_X_y(X, y,ensure_2d=True)
-         if y.ndim != 2:
-             y = y.reshape((len(y), 1))
+            u.c. l_i <= w_i <= u_i, i = 1:p
 
+        where c is the intercept, l_i and u_i the lower and upper bound for weights i.
+        The bounds have to be defined for each weight. For instance for positive solution
+        bounds = np.array([0,1e10]*p).
 
-         coef_ = fit_irls_nb(X, y,family=self.family , r=self.r, max_iter=self.max_iter, tol=self.tol, p_shrinkage=self.p_shrinkage, solver=self.solver)
-         self.coef_ = coef_.ravel()
-         return self
+        Parameters
+        ----------
+        lambda_l1 : float
+            The norm 1 penalty parameter "Lasso".
 
-     def predict_proba(self, X):
-         pass
+        lambda_l2 : float
+            The norm 2 penalty parameter "Ridge.
+
+        r: float, optional
+            Failure rate for the negative binomial family. It is a floating number to be abble to use it for the
+            Poisson-gamma regression.
+
+        fit_intercept : bool
+            Whether the intercept should be estimated or not. Note that the intercept is not regularized.
+
+        family : str
+            The target family distribution.
+
+        bounds : array, optional
+            Array of bounds. The first column is the lower bound. The second column is the upper bound.
+
+        solver : str
+            Solver to be used in the iterative reweighed least squared procedure.
+            - "inv" : use the matrix inverse. This only works with lambda_l1=0.
+            - "ccd" : use the cyclical coordinate descent.
+            When lambda_l1>0 "ccd" is automatically selected. For problem with low dimension (p<100) the "inv"
+            method should be faster.
+
+        max_iters : int
+            Number of maximum iteration for the iterative reweighed least squared procedure.
+
+        tol : float
+            Convergence tolerance for the ccd algorithm. the algorithm stops when ||w - w_old ||_2 < tol.
+
+        p_shrinkage : float
+            Shrink the probabilities for better stability.
+
+        """
+
+        self.lambda_l1 = float(lambda_l1)
+        self.lambda_l2 = float(lambda_l2)
+        self.r = float(r)
+        self.family = str(family)
+        self.bounds = bounds if bounds is None else check_array(bounds)
+        self.fit_intercept = fit_intercept
+        self.tol = float(tol)
+        self.max_iters = int(max_iters)
+        self.solver = solver
+        self.p_shrinkage = float(p_shrinkage)
+
+    def fit(self, X, y):
+        X, y = check_X_y(X, y, ensure_2d=True, accept_large_sparse=False, accept_sparse=False)
+        X = np.ascontiguousarray(X)
+        y = np.ascontiguousarray(y)
+
+        if y.ndim != 2:
+            y = y.reshape((len(y), 1))
+
+        coef_ = fit_irls(
+            X,
+            y,
+            family=self.family,
+            fit_intercept=self.fit_intercept,
+            lambda_l1=self.lambda_l1,
+            lambda_l2=self.lambda_l2,
+            bounds=self.bounds,
+            r=self.r,
+            max_iters=self.max_iters,
+            tol=self.tol,
+            p_shrinkage=self.p_shrinkage,
+            solver=self.solver,
+        )
+        self.coef_ = coef_.ravel()
+        return self
+
+    def predict(self, X):
+        return safe_sparse_dot(X, self.coef_) + self.intercept
+
 
 class SparseGLM(BaseEstimator, LinearClassifierMixin):
     def __init__(
@@ -72,7 +147,7 @@ class SparseGLM(BaseEstimator, LinearClassifierMixin):
                 args=(X, y, self.family, self.lambda_l2),
                 **self.solver_kwargs
             )
-            self.info_=info
+            self.info_ = info
 
         elif self.solver == "tcn":
             coef, nfeval, rc = optimize.fmin_tcn(
@@ -83,8 +158,12 @@ class SparseGLM(BaseEstimator, LinearClassifierMixin):
                 **self.solver_kwargs
             )
 
-        self.loss_value_ ,self.grad_value_ = _glm_loss_and_grad(coef, X, y, self.family, self.lambda_l2)
-        self.loss_value_ ,self.grad_value_ = _glm_loss_and_grad(coef, X, y, self.family, self.lambda_l2)
+        self.loss_value_, self.grad_value_ = _glm_loss_and_grad(
+            coef, X, y, self.family, self.lambda_l2
+        )
+        self.loss_value_, self.grad_value_ = _glm_loss_and_grad(
+            coef, X, y, self.family, self.lambda_l2
+        )
         if self.fit_intercept:
             self.coef_ = coef[:-1]
             self.intercept_ = coef[-1]

@@ -34,7 +34,7 @@ def get_W_and_z(X, y, family, r, p_shrinkage, mu):
 @njit(
     "float64[:,:](float64[:,:],float64[:,:],unicode_type,boolean,float64,float64,optional(float64[:,:]),float64,int64, float64, float64,unicode_type)"
 )
-def fit_irls_nb(
+def fit_irls(
     X,
     y,
     family="negativebinomial",

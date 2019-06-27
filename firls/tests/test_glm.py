@@ -1,19 +1,21 @@
-from firls.glm import fit_irls_nb
-from firls.sklearn import SparseGLM,GLM
-from firls.simulate import (
+import unittest
+
+import numpy as np
+import statsmodels.api as sm
+from scipy import sparse
+
+from firls.sklearn import SparseGLM, GLM
+from firls.tests.simulate import (
     simulate_supervised_poisson,
     simulate_supervised_negative_binomial,
-simulate_supervised_gaussian
+    simulate_supervised_gaussian,
 )
-import statsmodels.api as sm
-import unittest
-import numpy as np
-from scipy import sparse
+
 
 class TestSparseGlm(unittest.TestCase):
     def test_glm(self):
         np.random.seed()
-        for family in ["gaussian","poisson","negativebinomial"]:
+        for family in ["gaussian", "poisson", "negativebinomial"]:
             if family == "gaussian":
                 y, X, true_beta = simulate_supervised_gaussian(100, 4)
                 sm_family = sm.families.Gaussian()
@@ -47,7 +49,6 @@ class TestSparseGlm(unittest.TestCase):
 
 
 class TestFirlsGlm(unittest.TestCase):
-
     def test_negative_binomial(self):
         r = 1
         y, X, true_beta = simulate_supervised_negative_binomial(100, 4, r)
@@ -55,6 +56,5 @@ class TestFirlsGlm(unittest.TestCase):
         fit = model.fit()
         sm_coefs = fit.params
         glm = GLM(fit_intercept=False)
-        glm.fit(X,y)
+        glm.fit(X, y)
         np.testing.assert_almost_equal(sm_coefs, glm.coef_, 4)
-
