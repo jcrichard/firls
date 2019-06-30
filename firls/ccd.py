@@ -53,6 +53,8 @@ def ccd_pwls(
     XtX = X.T @ X
     Xty = X.T @ y
     active_set = list(range(p))
+    h = XtX @ beta
+
     for i in range(max_iters):
         for j in active_set:
 
@@ -61,7 +63,7 @@ def ccd_pwls(
                 beta_old = beta
                 break
 
-            h = XtX @ beta
+            beta_j_old = beta.copy()[j]
             rho = Xty[j] - (h[j] - beta[j] * sum_sq_X[j])
             if (fit_intercept) and (j == 0):
                 beta[j] = rho[0] / sum_sq_X[j]
@@ -71,6 +73,7 @@ def ccd_pwls(
                 beta[j] = np.minimum(np.maximum(beta[j], bounds[j, 0]), bounds[j, 1])
             if abs(beta[j, 0]) <= 1e-10:
                 active_set.remove(j)
+            h += (XtX[:,j]*(beta[j]-beta_j_old)).reshape(-1,1)
         if np.linalg.norm(beta_old - beta, 2) < tol:
             break
         beta_old = beta.copy()

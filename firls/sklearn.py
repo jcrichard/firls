@@ -4,7 +4,7 @@ from sklearn.linear_model.base import LinearClassifierMixin, BaseEstimator
 from sklearn.utils.validation import check_X_y, check_array
 
 from firls.irls import fit_irls
-from firls.loss_and_grad import _glm_loss_and_grad, safe_sparse_dot
+from firls.loss_and_grad import _glm_loss_and_grad
 
 
 def _check_solver(solver, bounds, lambda_l1):
@@ -128,7 +128,7 @@ class GLM(BaseEstimator, LinearClassifierMixin):
         return self
 
     def predict(self, X):
-        return safe_sparse_dot(X, self.coef_) + self.intercept
+        return np.dot(X, self.coef_) + self.intercept
 
 
 class SparseGLM(BaseEstimator, LinearClassifierMixin):
@@ -190,4 +190,4 @@ class SparseGLM(BaseEstimator, LinearClassifierMixin):
         return self
 
     def predict(self, X):
-        return safe_sparse_dot(X, self.coef_) + self.intercept
+        return np.dot(X, self.coef_) + self.intercept
