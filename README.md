@@ -1,5 +1,12 @@
-Python implementation of Generalised Linear Model (GLM) using numpy, numba and scipy.
-================
+firls
+=====
+
+**Python implementation of Generalised Linear Model (GLM) using numpy, numba and scipy.**
+
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/python/black)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+
 
 FIRSL is a package for solving sparse and dense penalised Generalised Linear Model. It is fully written in python.
 FIRSL includes these families with their natural link:
@@ -10,33 +17,31 @@ FIRSL includes these families with their natural link:
 * Binomial          | log
 * Logistic          | log
 
-For each family **norme 1** and **norme 2** penalty can be added .
+For each family **norm 1** and **norm 2** penalty can be added.
 
-### Sparse matrix
+Sparse matrix
+-------------
 The library support solving large sparse problems. Currently the **norme 1** is not supported.
 A sparse version of the cyclical coordinate descent algorithm will come later.
 
-### Scikit-learn API
-
+Scikit-learn API
+----------------
 The package subclass BaseEstimator and LinearClassifierMixin and is usable with scikit-learn.
 
-### Dependencies
-
-There is three main depencies: [numpy](http://www.numpy.org/), [scipy](http://www.scipy.org/) and  [numba](https://numba.pydata.org/).
+Dependencies
+------------
+There is three main decencies: [numpy](http://www.numpy.org/), [scipy](http://www.scipy.org/) and  [numba](https://numba.pydata.org/).
 To use the [scikit-learn](https://scikit-learn.org/stable/) API you will need to install it!
 
 
-### Installation
-
-Unfortunately, there was a name collision, so use this to install from PyPI:
-
-`pip install git+`
+Installation
+------------
+just do:
+`pip install git+https://github.com/jcrichard/firls.git`
 
 
 References
-------------------
-
-
+----------
 >Friedman, J., Hastie, T. and Tibshirani, R. (2010) Regularization Paths for Generalized Linear Models via Coordinate Descent, Journal of
 Statistics Software 33(1), pp. 1-22.
 
