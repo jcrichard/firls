@@ -97,12 +97,11 @@ class GLM(BaseEstimator, LinearClassifierMixin):
         self.fit_intercept = fit_intercept
         self.tol = float(tol)
         self.max_iters = int(max_iters)
-        self.solver = solver
         self.p_shrinkage = float(p_shrinkage)
 
     def fit(self, X, y):
         X, y = check_X_y(
-            X, y, ensure_2d=True, accept_large_sparse=False, accept_sparse=False
+            X, y, ensure_2d=True, accept_sparse=False
         )
         X = np.ascontiguousarray(X)
         y = np.ascontiguousarray(y)

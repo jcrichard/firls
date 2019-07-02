@@ -12,10 +12,10 @@ def simulate_supervised_gaussian(n, p):
     return y, X, beta
 
 
-def simulate_supervised_poisson(n, p):
+def simulate_supervised_poisson(n, p , r=1):
     np.random.seed(__SEED__)
     X = np.random.normal(size=(n, p))
-    beta = np.round(np.random.normal(scale=0.1, size=(p, 1)), 1)
+    beta = np.round(np.random.normal(scale=0.1, size=(p, 1)), r)
     mu = np.exp(X @ beta).flatten()
     y = np.random.poisson(lam=mu) * 1.0
     return y, X, beta

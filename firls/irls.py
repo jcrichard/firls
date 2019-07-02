@@ -20,7 +20,12 @@ def get_W_and_z(X, y, family, r, p_shrinkage, mu):
         W = r_plus_y * (prob * (1 - prob))
         z = eta + (mu + r) ** 2 * y / (r_plus_y * mu * r) - (mu + r) / r
     elif family == "binomial":
-        eta = np.log(mu / (1 + mu))
+        eta = np.log(mu)
+        prob = r*np.minimum(np.maximum(p_shrinkage, mu / (mu + 1)), 1 - p_shrinkage)
+        W = prob * (r - prob)
+        z = eta + r*(y - prob) / W
+    elif family == "bernouilli":
+        eta = np.log(mu)
         prob = np.minimum(np.maximum(p_shrinkage, mu / (mu + 1)), 1 - p_shrinkage)
         W = prob * (1 - prob)
         z = eta + (y - prob) / W
