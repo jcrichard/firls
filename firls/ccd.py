@@ -50,6 +50,7 @@ def ccd_pwls(
 
     beta = X.T @ y / sum_sq_X.reshape(p, 1)
     beta_old = beta.copy()
+    ones = np.ones((p,1))
     XtX = X.T @ X
     Xty = X.T @ y
     active_set = list(range(p))
@@ -60,10 +61,10 @@ def ccd_pwls(
 
             if len(active_set) == 0:
                 beta = beta * 0
-                beta_old = beta
+                beta_old = beta[:]
                 break
 
-            beta_j_old = beta.copy()[j]
+            beta_j_old = beta[:][j]
             rho = Xty[j] - (h[j] - beta[j] * sum_sq_X[j])
             if (fit_intercept) and (j == 0):
                 beta[j] = rho[0] / sum_sq_X[j]
@@ -74,8 +75,8 @@ def ccd_pwls(
             if abs(beta[j, 0]) <= 1e-10:
                 active_set.remove(j)
             h += (XtX[:,j]*(beta[j]-beta_j_old)).reshape(-1,1)
-        if np.linalg.norm(beta_old - beta, 2) < tol:
+        if np.sum((beta_old - beta)**2)**0.5 < tol:
             break
-        beta_old = beta.copy()
+        beta_old = beta[:]
 
     return beta

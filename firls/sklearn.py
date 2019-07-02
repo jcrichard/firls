@@ -136,16 +136,57 @@ class SparseGLM(BaseEstimator, LinearClassifierMixin):
         family="binomial",
         lambda_l2=0,
         fit_intercept=False,
+            bounds = None,
         solver="lbfgs",
         n_jobs=None,
         **solver_kwargs
     ):
+        """Generalized linear model for sparse features with L2 penalties. Support box constraints.
+
+            Minimizes the objective function::
+
+            ||y - Xw - c||^2_2
+            + 0.5 * lambda_l2 ||w||^2_2
+
+            u.c. l_i <= w_i <= u_i, i = 1:p
+
+        where c is the intercept, l_i and u_i the lower and upper bound for weights i.
+        The bounds have to be defined for each weight. For instance for positive solution
+        bounds = np.array([0,1e10]*p).
+
+        Parameters
+        ----------
+        family : str
+            The target family distribution.
+
+        lambda_l2 : float, optional
+            The norm 2 penalty parameter "Ridge.
+
+        fit_intercept : bool
+            Whether the intercept should be estimated or not. Note that the intercept is not regularized.
+
+        bounds : array, optional
+            Array of bounds. The first column is the lower bound. The second column is the upper bound.
+
+        solver : str
+            Behind the scene optimize from Scipy module is called. Both "lbfgs" and "tcn" can be used. See
+            the scipy doc for more information.
+            - "lbfgs" : low memory bfgs (default).
+            - "tcn" : truncated conjugate newton.
+
+        n_jobs :
+
+        solver_kwargs : dict
+            parameters to be passed to the solver.
+
+        """
         self.family = family
         self.solver = solver
         self.solver_kwargs = solver_kwargs
         self.fit_intercept = fit_intercept
         self.lambda_l2 = lambda_l2
         self.intercept = None
+        self.bounds = bounds if bounds is None else check_array(bounds)
 
     def fit(self, X, y):
         X, y = check_X_y(X, y, ensure_2d=True, accept_sparse="csr", order="C")
@@ -160,6 +201,7 @@ class SparseGLM(BaseEstimator, LinearClassifierMixin):
                 _glm_loss_and_grad,
                 w0,
                 fprime=None,
+                bounds=self.bounds,
                 args=(X, y, self.family, self.lambda_l2),
                 **self.solver_kwargs
             )
@@ -169,6 +211,7 @@ class SparseGLM(BaseEstimator, LinearClassifierMixin):
             coef, nfeval, rc = optimize.fmin_tcn(
                 _glm_loss_and_grad,
                 w0,
+                bounds=self.bounds,
                 fprime=None,
                 args=(X, y, self.family, self.lambda_l2),
                 **self.solver_kwargs
