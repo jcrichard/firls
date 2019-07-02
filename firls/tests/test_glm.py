@@ -28,6 +28,7 @@ class TestSparseGlm(unittest.TestCase):
 
             sglm = SparseGLM(family=family, fit_intercept=False)
             Xs = sparse.csr_matrix(X)
+
             sglm.fit(Xs, y)
 
             model = sm.GLM(y, X, family=sm_family)
