@@ -2,7 +2,7 @@ firls
 =====
 
 **Python implementation of Generalised Linear Model (GLM) using numpy, numba and scipy.**
-
+[![Build Status](https://travis-ci.com/jcrichard/firls.svg?token=GPmRE5NKPgUcr25o777N&branch=master)](https://travis-ci.com/jcrichard/firls)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/python/black)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -11,11 +11,11 @@ firls
 FIRSL is a package for solving sparse and dense penalised Generalised Linear Model. It is fully written in python.
 FIRSL includes these families with their natural link:
 
-* Guassian          | identity
+* Gaussian          | identity
 * Poisson           | log
 * Negative binomial | log
 * Binomial          | log
-* Logistic          | log
+* Bernoulli          | log
 
 For each family **norm 1** and **norm 2** penalty can be added.
 
