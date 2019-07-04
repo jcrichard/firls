@@ -21,7 +21,7 @@ class TestSparseGlm:
                 y, X, true_beta = simulate_supervised_poisson(100, 4)
                 sm_family = sm.families.Poisson()
             elif family == "negativebinomial":
-                y, X, true_beta = simulate_supervised_negative_binomial(100, 4)
+                y, X, true_beta = simulate_supervised_negative_binomial(100, 4, r=1)
                 sm_family = sm.families.NegativeBinomial()
 
             sglm = SparseGLM(family=family, fit_intercept=False)
@@ -58,7 +58,7 @@ class TestFirlsGlm:
                 y, X, true_beta = simulate_supervised_poisson(100, 4)
                 sm_family = sm.families.Poisson()
             elif family == "negativebinomial":
-                y, X, true_beta = simulate_supervised_negative_binomial(100, 4)
+                y, X, true_beta = simulate_supervised_negative_binomial(100, 4, r=1)
                 sm_family = sm.families.NegativeBinomial()
 
             sglm = GLM(family=family, fit_intercept=False)
