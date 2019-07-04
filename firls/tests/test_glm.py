@@ -1,5 +1,3 @@
-import unittest
-
 import numpy as np
 import statsmodels.api as sm
 from scipy import sparse
@@ -12,8 +10,8 @@ from firls.tests.simulate import (
 )
 
 
-class TestSparseGlm(unittest.TestCase):
-    def test_glm(self):
+class TestSparseGlm:
+    def test_sglm(self):
         np.random.seed()
         for family in ["gaussian", "poisson", "negativebinomial"]:
             if family == "gaussian":
@@ -23,7 +21,7 @@ class TestSparseGlm(unittest.TestCase):
                 y, X, true_beta = simulate_supervised_poisson(100, 4)
                 sm_family = sm.families.Poisson()
             elif family == "negativebinomial":
-                y, X, true_beta = simulate_supervised_poisson(100, 4)
+                y, X, true_beta = simulate_supervised_negative_binomial(100, 4)
                 sm_family = sm.families.NegativeBinomial()
 
             sglm = SparseGLM(family=family, fit_intercept=False)
@@ -49,13 +47,44 @@ class TestSparseGlm(unittest.TestCase):
             np.testing.assert_almost_equal(sm_coefs[0], sglm.intercept_, 4)
 
 
-class TestFirlsGlm(unittest.TestCase):
-    def test_negative_binomial(self):
-        r = 1
-        y, X, true_beta = simulate_supervised_negative_binomial(100, 4, r)
-        model = sm.GLM(y, X, family=sm.families.NegativeBinomial(alpha=r))
-        fit = model.fit()
-        sm_coefs = fit.params
-        glm = GLM(fit_intercept=False)
-        glm.fit(X, y)
-        np.testing.assert_almost_equal(sm_coefs, glm.coef_, 4)
+class TestFirlsGlm:
+    def test_glm(self):
+        np.random.seed(123)
+        for family in ["gaussian", "poisson", "negativebinomial"]:
+            if family == "gaussian":
+                y, X, true_beta = simulate_supervised_gaussian(100, 4)
+                sm_family = sm.families.Gaussian()
+            elif family == "poisson":
+                y, X, true_beta = simulate_supervised_poisson(100, 4)
+                sm_family = sm.families.Poisson()
+            elif family == "negativebinomial":
+                y, X, true_beta = simulate_supervised_negative_binomial(100, 4)
+                sm_family = sm.families.NegativeBinomial()
+
+            sglm = GLM(family=family, fit_intercept=False)
+            sglm.fit(X, y)
+
+            model = sm.GLM(y, X, family=sm_family)
+            fit = model.fit()
+            sm_coefs = fit.params
+            np.testing.assert_almost_equal(
+                sm_coefs, sglm.coef_, 4, err_msg="familly error: {}".format(family)
+            )
+
+            # with constant
+            sglm = GLM(family=family, fit_intercept=True)
+            sglm.fit(X, y)
+
+            model = sm.GLM(y, sm.add_constant(X), family=sm_family)
+            fit = model.fit()
+            sm_coefs = fit.params
+
+            np.testing.assert_almost_equal(
+                sm_coefs[1:], sglm.coef_, 4, err_msg="familly error: {}".format(family)
+            )
+            np.testing.assert_almost_equal(
+                sm_coefs[0],
+                sglm.intercept_,
+                4,
+                err_msg="familly error: {}".format(family),
+            )

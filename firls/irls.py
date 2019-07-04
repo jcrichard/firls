@@ -1,3 +1,6 @@
+"""Solve glm with separable constraint using irls."""
+
+
 from numba import njit
 from numba.types import float64, int64, unicode_type, boolean
 import numpy as np
@@ -21,10 +24,10 @@ def get_W_and_z(X, y, family, r, p_shrinkage, mu):
         z = eta + (mu + r) ** 2 * y / (r_plus_y * mu * r) - (mu + r) / r
     elif family == "binomial":
         eta = np.log(mu)
-        prob = r*np.minimum(np.maximum(p_shrinkage, mu / (mu + 1)), 1 - p_shrinkage)
+        prob = r * np.minimum(np.maximum(p_shrinkage, mu / (mu + 1)), 1 - p_shrinkage)
         W = prob * (r - prob)
-        z = eta + r*(y - prob) / W
-    elif family == "bernouilli":
+        z = eta + r * (y - prob) / W
+    elif family == "bernoulli":
         eta = np.log(mu)
         prob = np.minimum(np.maximum(p_shrinkage, mu / (mu + 1)), 1 - p_shrinkage)
         W = prob * (1 - prob)

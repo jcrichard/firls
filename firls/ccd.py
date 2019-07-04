@@ -1,3 +1,5 @@
+"""CCD solver for generalised constrained separable weighted least squared."""
+
 from numba import njit
 from numba.types import float64, int64, none, boolean
 import numpy as np
@@ -63,17 +65,22 @@ def ccd_pwls(
                 break
 
             beta_j_old = beta[:][j]
-            rho = Xty[j] - (h[j] - beta[j] * sum_sq_X[j])
+            rho = Xty[j] - (h[j] - beta_j_old * sum_sq_X[j])
             if (fit_intercept) and (j == 0):
-                beta[j] = rho[0] / sum_sq_X[j]
+                beta_j_new = rho[0] / sum_sq_X[j]
             else:
-                beta[j] = soft_threshold(rho[0], lambda_l1) / (sum_sq_X[j] + lambda_l2)
+                beta_j_new = soft_threshold(rho[0], lambda_l1) / (
+                    sum_sq_X[j] + lambda_l2
+                )
             if bounds is not None:
-                beta[j] = np.minimum(np.maximum(beta[j], bounds[j, 0]), bounds[j, 1])
+                beta_j_new = np.minimum(
+                    np.maximum(beta_j_new, bounds[j, 0]), bounds[j, 1]
+                )
             if abs(beta[j, 0]) <= 1e-10:
                 active_set.remove(j)
-            h += (XtX[:,j]*(beta[j]-beta_j_old)).reshape(-1,1)
-        if np.sum((beta_old - beta)**2)**0.5 < tol:
+            h += (XtX[:, j] * (beta_j_new - beta_j_old)).reshape(-1, 1)
+            beta[j] = beta_j_new
+        if np.sum((beta_old - beta) ** 2) ** 0.5 < tol:
             break
         beta_old = beta[:]
 

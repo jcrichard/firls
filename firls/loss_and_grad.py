@@ -1,6 +1,10 @@
+"""Scipy losses and gradients for sparse GLM."""
+
+
 import numpy as np
 from numba import vectorize, float64
 from scipy import sparse
+
 
 @vectorize([float64(float64)])
 def log_inverse_logit(x):
@@ -19,9 +23,10 @@ def inverse_logit(x):
     else:
         return np.exp(x) / (1 + np.exp(x))
 
-def _safe_sparse_product(X,w):
+
+def _safe_sparse_product(X, w):
     if sparse.issparse(X):
-        z = X*w
+        z = X * w
     else:
         z = np.dot(X, w)
     return z
@@ -34,7 +39,7 @@ def _intercept_dot(w, X):
         c = w[-1]
         w = w[:-1]
 
-    z =_safe_sparse_product(X,w) + c
+    z = _safe_sparse_product(X, w) + c
 
     return w, c, z
 
@@ -75,7 +80,7 @@ def _glm_loss_and_grad(
         ) + 0.5 * lambda_l2 * np.dot(w.T, w)
         z0 = sample_weight * (p_tilde - y)
 
-    grad[:n_features] = _safe_sparse_product(X.T,z0) + lambda_l2 * w
+    grad[:n_features] = _safe_sparse_product(X.T, z0) + lambda_l2 * w
 
     if grad.shape[0] > n_features:
         grad[-1] = z0.sum()
