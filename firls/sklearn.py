@@ -5,6 +5,7 @@ from sklearn.utils.validation import check_X_y, check_array
 
 from firls.irls import fit_irls
 from firls.loss_and_grad import _glm_loss_and_grad
+from firls.loss_and_grad import inverse_logit
 
 
 def _check_solver(solver, bounds, lambda_l1):
@@ -100,9 +101,7 @@ class GLM(BaseEstimator, LinearClassifierMixin):
         self.p_shrinkage = float(p_shrinkage)
 
     def fit(self, X, y):
-        X, y = check_X_y(
-            X, y, ensure_2d=True, accept_sparse=False
-        )
+        X, y = check_X_y(X, y, ensure_2d=True, accept_sparse=False)
         X = np.ascontiguousarray(X)
         y = np.ascontiguousarray(y)
 
@@ -123,11 +122,26 @@ class GLM(BaseEstimator, LinearClassifierMixin):
             p_shrinkage=self.p_shrinkage,
             solver=self.solver,
         )
-        self.coef_ = coef_.ravel()
+        coef = coef_.ravel()
+        if self.fit_intercept:
+            self.coef_ = coef[1:]
+            self.intercept_ = coef[0]
+        else:
+            self.coef_ = coef
+            self.intercept_ = 0
         return self
 
     def predict(self, X):
-        return np.dot(X, self.coef_) + self.intercept
+        return np.dot(X, self.coef_) + self.intercept_
+
+    def predict_proba(self, X):
+        if self.family == "gaussian":
+            raise NotImplemented()
+        elif self.family == "bernoulli":
+            return inverse_logit(np.dot(X, self.coef_) + self.intercept_)
+        elif self.family == "poisson":
+            return self
+        return self
 
 
 class SparseGLM(BaseEstimator, LinearClassifierMixin):
@@ -136,7 +150,7 @@ class SparseGLM(BaseEstimator, LinearClassifierMixin):
         family="binomial",
         lambda_l2=0,
         fit_intercept=False,
-            bounds = None,
+        bounds=None,
         solver="lbfgs",
         n_jobs=None,
         **solver_kwargs
