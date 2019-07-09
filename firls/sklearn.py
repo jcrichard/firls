@@ -21,7 +21,72 @@ def _check_solver(solver, bounds, lambda_l1):
         return "inv"
 
 
-class GLM(BaseEstimator, LinearClassifierMixin):
+def _predict_glm(X, coef, family, intercept):
+    if family == "gaussian":
+        return np.dot(X, coef) + intercept
+    else:
+        return np.exp(np.dot(X, coef) + intercept)
+
+
+class FastGlm(BaseEstimator, LinearClassifierMixin):
+    """
+    Base class for sharing methods. Defined properties respect sklearn
+    naming convention of other linear models.
+    """
+
+    @property
+    def coef_(self):
+        return self._coef
+
+    @property
+    def intercept_(self):
+        return self._intercept
+
+    @property
+    def family(self):
+        return self._family
+
+    def predict(self, X):
+        """
+        Predict using the glm family. For family="gaussian" the identity link is used
+        otherwise the log link is used.
+
+        Parameters
+        ----------
+        X : array
+            data
+
+        Returns
+        -------
+        Returns the predicted values.
+
+        """
+        return _predict_glm(X, self.coef, self.family, self.intercept)
+
+    def predict_proba(self, X):
+        """
+        Predict the class probability.
+
+        Parameters
+        ----------
+        X : array
+            data
+
+        Returns
+        -------
+        Returns the class probability.
+
+        """
+        if self.family == "gaussian":
+            raise NotImplemented()
+        elif self.family == "bernoulli":
+            return inverse_logit(np.dot(X, self.coef) + self.intercept)
+        elif self.family == "poisson":
+            return self
+        return self
+
+
+class GLM(FastGlm):
     """Generalized linear model with L1 and L2 penalties. Support box constraints.
 
         Minimizes the objective function::
@@ -76,24 +141,24 @@ class GLM(BaseEstimator, LinearClassifierMixin):
     """
 
     def __init__(
-        self,
-        lambda_l1=None,
-        lambda_l2=None,
-        r=1,
-        fit_intercept=True,
-        family="negativebinomial",
-        bounds=None,
-        solver=None,
-        max_iters=10000,
-        tol=1e-8,
-        p_shrinkage=1e-10,
+            self,
+            lambda_l1=None,
+            lambda_l2=None,
+            r=1,
+            fit_intercept=True,
+            family="negativebinomial",
+            bounds=None,
+            solver=None,
+            max_iters=10000,
+            tol=1e-8,
+            p_shrinkage=1e-10,
     ):
 
         self.solver = _check_solver(solver, bounds, lambda_l1)
         self.lambda_l1 = float(lambda_l1) if lambda_l1 is not None else 0.0
         self.lambda_l2 = float(lambda_l2) if lambda_l2 is not None else 0.0
         self.r = float(r)
-        self.family = str(family)
+        self._family = str(family)
         self.bounds = bounds if bounds is None else check_array(bounds)
         self.fit_intercept = fit_intercept
         self.tol = float(tol)
@@ -111,7 +176,7 @@ class GLM(BaseEstimator, LinearClassifierMixin):
         coef_ = fit_irls(
             X,
             y,
-            family=self.family,
+            family=self._family,
             fit_intercept=self.fit_intercept,
             lambda_l1=float(self.lambda_l1) if self.lambda_l1 is not None else 0.0,
             lambda_l2=float(self.lambda_l2) if self.lambda_l2 is not None else 0.0,
@@ -124,36 +189,24 @@ class GLM(BaseEstimator, LinearClassifierMixin):
         )
         coef = coef_.ravel()
         if self.fit_intercept:
-            self.coef_ = coef[1:]
-            self.intercept_ = coef[0]
+            self._coef = coef[1:]
+            self._intercept = coef[0]
         else:
-            self.coef_ = coef
-            self.intercept_ = 0
-        return self
-
-    def predict(self, X):
-        return np.dot(X, self.coef_) + self.intercept_
-
-    def predict_proba(self, X):
-        if self.family == "gaussian":
-            raise NotImplemented()
-        elif self.family == "bernoulli":
-            return inverse_logit(np.dot(X, self.coef_) + self.intercept_)
-        elif self.family == "poisson":
-            return self
+            self._coef = coef
+            self._intercept = 0
         return self
 
 
-class SparseGLM(BaseEstimator, LinearClassifierMixin):
+class SparseGLM(FastGlm):
     def __init__(
-        self,
-        family="binomial",
-        lambda_l2=0,
-        fit_intercept=False,
-        bounds=None,
-        solver="lbfgs",
-        n_jobs=None,
-        **solver_kwargs
+            self,
+            family="binomial",
+            lambda_l2=0,
+            fit_intercept=False,
+            bounds=None,
+            solver="lbfgs",
+            n_jobs=None,
+            **solver_kwargs
     ):
         """Generalized linear model for sparse features with L2 penalties. Support box constraints.
 
@@ -194,12 +247,11 @@ class SparseGLM(BaseEstimator, LinearClassifierMixin):
             parameters to be passed to the solver.
 
         """
-        self.family = family
+        self._family = family
         self.solver = solver
         self.solver_kwargs = solver_kwargs
         self.fit_intercept = fit_intercept
         self.lambda_l2 = lambda_l2
-        self.intercept = None
         self.bounds = bounds if bounds is None else check_array(bounds)
 
     def fit(self, X, y):
@@ -238,12 +290,9 @@ class SparseGLM(BaseEstimator, LinearClassifierMixin):
             coef, X, y, self.family, self.lambda_l2
         )
         if self.fit_intercept:
-            self.coef_ = coef[:-1]
-            self.intercept_ = coef[-1]
+            self._coef = coef[:-1]
+            self._intercept = coef[-1]
         else:
-            self.coef_ = coef
-            self.intercept_ = 0
+            self._coef = coef
+            self._intercept = 0
         return self
-
-    def predict(self, X):
-        return np.dot(X, self.coef_) + self.intercept
