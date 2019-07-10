@@ -205,7 +205,6 @@ class SparseGLM(FastGlm):
             fit_intercept=False,
             bounds=None,
             solver="lbfgs",
-            n_jobs=None,
             **solver_kwargs
     ):
         """Generalized linear model for sparse features with L2 penalties. Support box constraints.
@@ -240,8 +239,6 @@ class SparseGLM(FastGlm):
             the scipy doc for more information.
             - "lbfgs" : low memory bfgs (default).
             - "tcn" : truncated conjugate newton.
-
-        n_jobs :
 
         solver_kwargs : dict
             parameters to be passed to the solver.

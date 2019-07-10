@@ -35,7 +35,7 @@ def ccd_pwls(
     lambda_l2=0.0,
     bounds=None,
     max_iters=1000,
-    tol=1e-10,
+    tol=1e-20,
 ):
     """Coordinate descent algorithm for penalized weighted least squared. Please respect the signature."""
     if fit_intercept:
@@ -50,7 +50,7 @@ def ccd_pwls(
         y = y * W ** 0.5
 
     beta = X.T @ y / sum_sq_X.reshape(p, 1)
-    beta_old = beta[:]
+    beta_old = beta[:]*0
     XtX = X.T @ X
     Xty = X.T @ y
     active_set = list(range(p))
@@ -64,7 +64,7 @@ def ccd_pwls(
                 beta_old = beta[:]
                 break
 
-            beta_j_old = beta[:][j]
+            beta_j_old = beta[j]
             rho = Xty[j] - (h[j] - beta_j_old * sum_sq_X[j])
             if (fit_intercept) and (j == 0):
                 beta_j_new = rho[0] / sum_sq_X[j]
@@ -82,6 +82,6 @@ def ccd_pwls(
             beta[j] = beta_j_new
         if np.sum((beta_old - beta) ** 2) ** 0.5 < tol:
             break
-        beta_old = beta[:]
+        beta_old = np.copy(beta)
 
     return beta

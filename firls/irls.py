@@ -89,6 +89,8 @@ def fit_irls(
                 )
             else:
                 w = np.linalg.inv(X_tilde.T @ X_tilde) @ X_tilde.T @ z_tilde
+            print(w)
+            break
         elif solver == "ccd":
             w = ccd_pwls(
                 X,
@@ -101,6 +103,8 @@ def fit_irls(
                 max_iters=max_iters,
                 tol=tol,
             )
+            print(w)
+            break
 
         if fit_intercept:
             mu = np.exp(X @ w[1:] + w[0])
@@ -110,4 +114,5 @@ def fit_irls(
         if np.linalg.norm(w_old - w) < tol:
             break
         w_old = w
+
     return w
