@@ -52,7 +52,7 @@ def fit_irls(
     bounds=None,
     r=0.0,
     max_iters=1000,
-    tol=1e-10,
+    tol=1e-3,
     p_shrinkage=1e-10,
     solver="inv",
 ):

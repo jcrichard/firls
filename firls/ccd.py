@@ -35,7 +35,7 @@ def ccd_pwls(
     lambda_l2=0.0,
     bounds=None,
     max_iters=1000,
-    tol=1e-20,
+    tol=1e-3,
 ):
     """Coordinate descent algorithm for penalized weighted least squared. Please respect the signature."""
     if fit_intercept:
