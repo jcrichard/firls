@@ -1,11 +1,61 @@
 import numpy as np
-
+from scipy import sparse as scs
 __SEED__ = 1234
 
+def simulate_supervised_glme(n, p,family ,sparse_x = False, desity = 0.01):
+    """
+    Simulate a glm model.
 
-def simulate_supervised_gaussian(n, p):
+    Parameters
+    ----------
+    n : int
+        number of sample.
+
+    p : int
+        number of variable.
+
+    family : str
+        Probability distribution family.
+
+    sparse_x : bool
+        if true the feature are sparse (coo format).
+
+    desity : double
+        level of sparsity. Only acive if sparse_x = True
+
+    Returns
+    -------
+        return the target y, the variable X and the true beta of the model.
+
+    """
     np.random.seed(__SEED__)
-    X = np.random.normal(size=(n, p))
+    if sparse_x:
+        X = np.random.normal(size=(n, p))
+    else:
+        X = scs.random(n,p,desity=desity)
+    beta = np.round(np.random.normal(scale=0.3, size=(p, 1)), 1)
+    if family=="gaussian":
+        mu = (X @ beta).flatten()
+        y = np.random.normal(loc=mu) * 1.0
+    elif family=="poisson":
+        mu = np.exp(X @ beta).flatten()
+        y = np.random.poisson(lam=mu) * 1.0
+    elif family=="negativebinomial":
+        mu = np.exp(X @ beta).flatten()
+        p = mu / (mu + r)
+        y = np.random.negative_binomial(r, p) * 1.0
+    elif family == "bernouilli":
+        mu = np.exp(X @ beta).flatten()
+        p = mu / (mu + 1)
+        y = np.random.binomial(1, p) * 1.0
+    return y, X, beta
+
+def simulate_supervised_gaussian(n, p, sparse_x = False, desity = 0.01):
+    np.random.seed(__SEED__)
+    if sparse_x:
+        X = np.random.normal(size=(n, p))
+    else:
+        X = scs.random(n,p,desity=desity)
     beta = np.round(np.random.normal(scale=0.3, size=(p, 1)), 1)
     mu = (X @ beta).flatten()
     y = np.random.normal(loc=mu) * 1.0

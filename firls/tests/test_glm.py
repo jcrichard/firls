@@ -50,7 +50,9 @@ def test_sglm(family):
 
 @pytest.mark.parametrize('family',
                          ("gaussian", "poisson", "negativebinomial"))
-def test_glm(family):
+@pytest.mark.parametrize('solver',
+                         ("inv", "ccd"))
+def test_glm(family,solver):
     np.random.seed(123)
 
     if family == "gaussian":
@@ -63,7 +65,7 @@ def test_glm(family):
         y, X, true_beta = simulate_supervised_negative_binomial(100, 4, r=1)
         sm_family = sm.families.NegativeBinomial()
 
-    sglm = GLM(family=family, fit_intercept=False)
+    sglm = GLM(family=family, fit_intercept=False,solver=solver)
     sglm.fit(X, y)
 
     model = sm.GLM(y, X, family=sm_family)
@@ -74,7 +76,7 @@ def test_glm(family):
     )
 
     # with constant
-    sglm = GLM(family=family, fit_intercept=True)
+    sglm = GLM(family=family, fit_intercept=True,solver=solver)
     sglm.fit(X, y)
 
     model = sm.GLM(y, sm.add_constant(X), family=sm_family)
