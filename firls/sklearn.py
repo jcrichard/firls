@@ -8,10 +8,17 @@ from firls.loss_and_grad import _glm_loss_and_grad
 from firls.loss_and_grad import inverse_logit
 
 
+VALID_FAMILLY = ['gaussian', 'binomial', 'bernouilli', 'poisson','negativebinomial']
+VALID_SOLVER = ["ccd","inv"]
+
+
+
 def _check_solver(solver, bounds, lambda_l1):
     """Helper function for selecting the solver.
     """
     if solver is not None:
+        if solver not in VALID_SOLVER:
+            raise ValueError("'solver' must be in " + repr(VALID_SOLVER))
         return solver
     elif bounds is not None:
         return "ccd"
@@ -61,7 +68,7 @@ class FastGlm(BaseEstimator, LinearClassifierMixin):
         Returns the predicted values.
 
         """
-        return _predict_glm(X, self.coef, self.family, self.intercept)
+        return _predict_glm(X, self.coef_, self.family, self.intercept_)
 
     def predict_proba(self, X):
         """
@@ -158,6 +165,9 @@ class GLM(FastGlm):
         self.lambda_l1 = float(lambda_l1) if lambda_l1 is not None else 0.0
         self.lambda_l2 = float(lambda_l2) if lambda_l2 is not None else 0.0
         self.r = float(r)
+
+        if family not in VALID_FAMILLY:
+            raise ValueError("'family' must be in " + repr(VALID_FAMILLY))
         self._family = str(family)
         self.bounds = bounds if bounds is None else check_array(bounds)
         self.fit_intercept = fit_intercept
