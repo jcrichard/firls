@@ -1,8 +1,10 @@
 import numpy as np
 from scipy import sparse as scs
+
 __SEED__ = 1234
 
-def simulate_supervised_glme(n, p,family ,sparse_x = False, desity = 0.01):
+
+def simulate_supervised_glme(n, p, family, sparse_x=False, density=0.01):
     """
     Simulate a glm model.
 
@@ -20,8 +22,8 @@ def simulate_supervised_glme(n, p,family ,sparse_x = False, desity = 0.01):
     sparse_x : bool
         if true the feature are sparse (coo format).
 
-    desity : double
-        level of sparsity. Only acive if sparse_x = True
+    density : double
+        level of sparsity. Only active if sparse_x = True
 
     Returns
     -------
@@ -29,18 +31,18 @@ def simulate_supervised_glme(n, p,family ,sparse_x = False, desity = 0.01):
 
     """
     np.random.seed(__SEED__)
-    if sparse_x:
+    if not sparse_x:
         X = np.random.normal(size=(n, p))
     else:
-        X = scs.random(n,p,desity=desity)
+        X = scs.random(n, p, density=density)
     beta = np.round(np.random.normal(scale=0.3, size=(p, 1)), 1)
-    if family=="gaussian":
+    if family == "gaussian":
         mu = (X @ beta).flatten()
         y = np.random.normal(loc=mu) * 1.0
-    elif family=="poisson":
+    elif family == "poisson":
         mu = np.exp(X @ beta).flatten()
         y = np.random.poisson(lam=mu) * 1.0
-    elif family=="negativebinomial":
+    elif family == "negativebinomial":
         mu = np.exp(X @ beta).flatten()
         p = mu / (mu + r)
         y = np.random.negative_binomial(r, p) * 1.0
@@ -50,19 +52,20 @@ def simulate_supervised_glme(n, p,family ,sparse_x = False, desity = 0.01):
         y = np.random.binomial(1, p) * 1.0
     return y, X, beta
 
-def simulate_supervised_gaussian(n, p, sparse_x = False, desity = 0.01):
+
+def simulate_supervised_gaussian(n, p, sparse_x=False, density=0.01):
     np.random.seed(__SEED__)
-    if sparse_x:
+    if not sparse_x:
         X = np.random.normal(size=(n, p))
     else:
-        X = scs.random(n,p,desity=desity)
+        X = scs.random(n, p, density=density)
     beta = np.round(np.random.normal(scale=0.3, size=(p, 1)), 1)
     mu = (X @ beta).flatten()
     y = np.random.normal(loc=mu) * 1.0
     return y, X, beta
 
 
-def simulate_supervised_poisson(n, p , r=1):
+def simulate_supervised_poisson(n, p, r=1):
     np.random.seed(__SEED__)
     X = np.random.normal(size=(n, p))
     beta = np.round(np.random.normal(scale=0.1, size=(p, 1)), r)
