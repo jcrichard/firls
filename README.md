@@ -1,4 +1,4 @@
-firls
+firls: !!!UNDER DEVELOPMENT!!!
 =====
 
 **Python implementation of Generalised Linear Model (GLM) using numpy, numba and scipy.**
@@ -10,8 +10,8 @@ firls
 
 
 
-FIRSL is a package for solving sparse and dense penalised Generalised Linear Model. It is fully written in python.
-FIRSL includes these families with their natural link:
+FIRLS is a package for solving sparse and dense penalised Generalised Linear Model. It is fully written in python.
+FIRLS includes these families with their natural link:
 
 * Gaussian          | identity
 * Poisson           | log
@@ -23,7 +23,7 @@ For each family **norm 1** and **norm 2** penalty can be added.
 
 Sparse matrix
 -------------
-The library support solving large sparse problems. Currently the **norme 1** is not supported.
+The library support solving large sparse problems. Currently the **norm 1** is not supported.
 A sparse version of the cyclical coordinate descent algorithm will come later.
 
 Scikit-learn API
