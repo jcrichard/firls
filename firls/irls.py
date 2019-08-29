@@ -104,6 +104,8 @@ def fit_irls(
                 max_iters=max_iters,
                 tol=tol,
             )
+        if family == "gaussian":
+            return w
 
         if family=='gaussian': #no need to iterate irls for gaussian family
             return w,1,ccd_niter
