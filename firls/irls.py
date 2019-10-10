@@ -2,7 +2,7 @@
 
 
 from numba import njit
-from numba.types import float64, int64, unicode_type, boolean
+from numba.types import float64, int64, unicode_type, boolean,Tuple,optional
 import numpy as np
 from firls.ccd import ccd_pwls, add_constant
 
@@ -40,7 +40,7 @@ def get_W_and_z(X, y, family, r, p_shrinkage, mu):
 
 
 @njit(
-    "float64[:,:](float64[:,:],float64[:,:],unicode_type,boolean,float64,float64,optional(float64[:,:]),float64,int64, float64, float64,unicode_type)"
+    "Tuple((float64[:,:],int64,int64))(float64[:,:],float64[:,:],unicode_type,boolean,float64,float64,optional(float64[:,:]),float64,int64, float64, float64,unicode_type)"
 )
 def fit_irls(
     X,
@@ -69,7 +69,7 @@ def fit_irls(
         if fit_intercept:
             I[0, 0] = 0
 
-    for i in range(max_iters):
+    for irls_niter in range(max_iters):
 
         Wz = get_W_and_z(X, y, family=family, r=r, p_shrinkage=p_shrinkage, mu=mu)
         W = np.expand_dims(Wz[:, 0], 1)
@@ -89,26 +89,34 @@ def fit_irls(
                 )
             else:
                 w = np.linalg.inv(X_tilde.T @ X_tilde) @ X_tilde.T @ z_tilde
+            ccd_niter=0
         elif solver == "ccd":
-            w = ccd_pwls(
+            w,ccd_niter = ccd_pwls(
                 X,
                 z,
                 W,
+                b=None,
                 fit_intercept=fit_intercept,
                 lambda_l1=lambda_l1,
                 lambda_l2=lambda_l2,
+                Gamma=None,
                 bounds=bounds,
                 max_iters=max_iters,
                 tol=tol,
             )
+
+        if family=='gaussian': #no need to iterate irls for gaussian family
+            return w,1,ccd_niter
 
         if fit_intercept:
             mu = np.exp(X @ w[1:] + w[0])
         else:
             mu = np.exp(X @ w)
 
+
         if np.linalg.norm(w_old - w) < tol:
             break
         w_old = w
 
-    return w
+
+    return w,irls_niter,ccd_niter

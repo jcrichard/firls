@@ -7,7 +7,6 @@ from firls.irls import fit_irls
 from firls.loss_and_grad import _glm_loss_and_grad
 from firls.loss_and_grad import inverse_logit
 
-
 VALID_FAMILLY = ['gaussian', 'binomial', 'bernouilli', 'poisson','negativebinomial']
 VALID_SOLVER = ["ccd","inv"]
 
@@ -19,6 +18,9 @@ def _check_solver(solver, bounds, lambda_l1):
     if solver is not None:
         if solver not in VALID_SOLVER:
             raise ValueError("'solver' must be in " + repr(VALID_SOLVER))
+        if lambda_l1 is not None and solver!="ccd":
+            raise ValueError("Only ccd solver is allowed with 'lambda_l1'")
+
         return solver
     elif bounds is not None:
         return "ccd"
@@ -86,8 +88,8 @@ class FastGlm(BaseEstimator, LinearClassifierMixin):
         """
         if self.family == "gaussian":
             raise NotImplemented()
-        elif self.family == "bernoulli":
-            return inverse_logit(np.dot(X, self.coef) + self.intercept)
+        elif self.family == "binomial":
+            return inverse_logit(np.dot(X, self.coef_) + self.intercept_)
         elif self.family == "poisson":
             return self
         return self
@@ -153,7 +155,7 @@ class GLM(FastGlm):
             lambda_l2=None,
             r=1,
             fit_intercept=True,
-            family="negativebinomial",
+            family="binomial",
             bounds=None,
             solver=None,
             max_iters=10000,
@@ -183,7 +185,7 @@ class GLM(FastGlm):
         if y.ndim != 2:
             y = y.reshape((len(y), 1))
 
-        coef_ = fit_irls(
+        coef_ , irls_niter,ccd_niter= fit_irls(
             X,
             y,
             family=self._family,
@@ -195,8 +197,10 @@ class GLM(FastGlm):
             max_iters=self.max_iters,
             tol=self.tol,
             p_shrinkage=self.p_shrinkage,
-            solver=self.solver,
+            solver=self.solver
         )
+        self.irls_niter_ = irls_niter
+        self.ccd_niter_ = ccd_niter
         coef = coef_.ravel()
         if self.fit_intercept:
             self._coef = coef[1:]
