@@ -3,7 +3,7 @@ from scipy import sparse as scs
 
 __SEED__ = 1234
 
-
+def simulate_supervised_glme(n, p,family ,sparse_x = False, density = 0.01):
 def simulate_supervised_glme(n, p, family, sparse_x=False, density=0.01):
     """
     Simulate a glm model.
@@ -11,19 +11,19 @@ def simulate_supervised_glme(n, p, family, sparse_x=False, density=0.01):
     Parameters
     ----------
     n : int
-        number of sample.
+        Number of sample
 
     p : int
-        number of variable.
+        Number of variable
 
     family : str
-        Probability distribution family.
+        Probability distribution family
 
     sparse_x : bool
-        if true the feature are sparse (coo format).
+        If true the feature are sparse (coo format)
 
     density : double
-        level of sparsity. Only active if sparse_x = True
+        Level of sparsity. Only active if sparse_x = True
 
     Returns
     -------
@@ -34,7 +34,7 @@ def simulate_supervised_glme(n, p, family, sparse_x=False, density=0.01):
     if not sparse_x:
         X = np.random.normal(size=(n, p))
     else:
-        X = scs.random(n, p, density=density)
+        X = scs.random(n,p,density=density)
     beta = np.round(np.random.normal(scale=0.3, size=(p, 1)), 1)
     if family == "gaussian":
         mu = (X @ beta).flatten()
@@ -46,7 +46,7 @@ def simulate_supervised_glme(n, p, family, sparse_x=False, density=0.01):
         mu = np.exp(X @ beta).flatten()
         p = mu / (mu + r)
         y = np.random.negative_binomial(r, p) * 1.0
-    elif family == "bernouilli":
+    elif family == "binomial":
         mu = np.exp(X @ beta).flatten()
         p = mu / (mu + 1)
         y = np.random.binomial(1, p) * 1.0
@@ -56,8 +56,7 @@ def simulate_supervised_glme(n, p, family, sparse_x=False, density=0.01):
 def simulate_supervised_gaussian(n, p, sparse_x=False, density=0.01):
     np.random.seed(__SEED__)
     if not sparse_x:
-        X = np.random.normal(size=(n, p))
-    else:
+    X = np.random.normal(size=(n, p))
         X = scs.random(n, p, density=density)
     beta = np.round(np.random.normal(scale=0.3, size=(p, 1)), 1)
     mu = (X @ beta).flatten()

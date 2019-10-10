@@ -8,11 +8,12 @@ from firls.tests.simulate import (
     simulate_supervised_poisson,
     simulate_supervised_negative_binomial,
     simulate_supervised_gaussian,
+simulate_supervised_binomial
 )
 import pytest
 
 @pytest.mark.parametrize('family',
-                         ("gaussian", "poisson", "negativebinomial"))
+                         ("gaussian", "poisson", "negativebinomial","binomial"))
 def test_sglm(family):
     np.random.seed()
 
@@ -25,7 +26,9 @@ def test_sglm(family):
     elif family == "negativebinomial":
         y, X, true_beta = simulate_supervised_negative_binomial(100, 4, r=1)
         sm_family = sm.families.NegativeBinomial()
-
+    elif family == "binomial":
+        y, X, true_beta = simulate_supervised_binomial(100, 4, r=1)
+        sm_family = sm.families.Binomial()
     sglm = SparseGLM(family=family, fit_intercept=False)
     Xs = sparse.csr_matrix(X)
 
@@ -49,7 +52,7 @@ def test_sglm(family):
     np.testing.assert_almost_equal(sm_coefs[0], sglm.intercept_, 4)
 
 @pytest.mark.parametrize('family',
-                         ("gaussian", "poisson", "negativebinomial"))
+                         ("gaussian", "poisson", "negativebinomial","binomial"))
 @pytest.mark.parametrize('solver',
                          ("inv", "ccd"))
 def test_glm(family,solver):
@@ -64,7 +67,9 @@ def test_glm(family,solver):
     elif family == "negativebinomial":
         y, X, true_beta = simulate_supervised_negative_binomial(100, 4, r=1)
         sm_family = sm.families.NegativeBinomial()
-
+    elif family == "binomial":
+        y, X, true_beta = simulate_supervised_binomial(100, 4, r=1)
+        sm_family = sm.families.Binomial()
     sglm = GLM(family=family, fit_intercept=False,solver=solver)
     sglm.fit(X, y)
 
@@ -75,7 +80,17 @@ def test_glm(family,solver):
         sm_coefs, sglm.coef_, 4, err_msg="familly error: {}".format(family)
     )
 
-    # with constant
+    if family == "binomial":
+        np.testing.assert_almost_equal(
+            fit.predict(X),sglm.predict_proba(X),decimal=3)
+    else:
+        np.testing.assert_almost_equal(
+            fit.predict(X), sglm.predict(X), decimal=3)
+
+
+
+
+# with constant
     sglm = GLM(family=family, fit_intercept=True,solver=solver)
     sglm.fit(X, y)
 
@@ -92,3 +107,5 @@ def test_glm(family,solver):
         4,
         err_msg="familly error: {}".format(family),
     )
+
+
