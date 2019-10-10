@@ -3,7 +3,6 @@ from scipy import sparse as scs
 
 __SEED__ = 1234
 
-def simulate_supervised_glme(n, p,family ,sparse_x = False, density = 0.01):
 def simulate_supervised_glme(n, p, family, sparse_x=False, density=0.01):
     """
     Simulate a glm model.
@@ -53,11 +52,9 @@ def simulate_supervised_glme(n, p, family, sparse_x=False, density=0.01):
     return y, X, beta
 
 
-def simulate_supervised_gaussian(n, p, sparse_x=False, density=0.01):
+def simulate_supervised_gaussian(n, p):
     np.random.seed(__SEED__)
-    if not sparse_x:
     X = np.random.normal(size=(n, p))
-        X = scs.random(n, p, density=density)
     beta = np.round(np.random.normal(scale=0.3, size=(p, 1)), 1)
     mu = (X @ beta).flatten()
     y = np.random.normal(loc=mu) * 1.0
