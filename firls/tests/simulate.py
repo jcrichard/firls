@@ -3,7 +3,7 @@ from scipy import sparse as scs
 
 __SEED__ = 1234
 
-def simulate_supervised_glme(n, p, family, sparse_x=False, density=0.01):
+def simulate_supervised_glme(n, p, family, sparse_x=False,r = 1, density=0.01):
     """
     Simulate a glm model.
 

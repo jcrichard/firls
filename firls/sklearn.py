@@ -7,9 +7,8 @@ from firls.irls import fit_irls
 from firls.loss_and_grad import _glm_loss_and_grad
 from firls.loss_and_grad import inverse_logit
 
-VALID_FAMILLY = ['gaussian', 'binomial', 'bernouilli', 'poisson','negativebinomial']
-VALID_SOLVER = ["ccd","inv"]
-
+VALID_FAMILLY = ["gaussian", "binomial", "bernouilli", "poisson", "negativebinomial"]
+VALID_SOLVER = ["ccd", "inv"]
 
 
 def _check_solver(solver, bounds, lambda_l1):
@@ -18,7 +17,7 @@ def _check_solver(solver, bounds, lambda_l1):
     if solver is not None:
         if solver not in VALID_SOLVER:
             raise ValueError("'solver' must be in " + repr(VALID_SOLVER))
-        if lambda_l1 is not None and solver!="ccd":
+        if lambda_l1 is not None and solver != "ccd":
             raise ValueError("Only ccd solver is allowed with 'lambda_l1'")
 
         return solver
@@ -32,9 +31,9 @@ def _check_solver(solver, bounds, lambda_l1):
 
 def _predict_glm(X, coef, family, intercept):
     if family == "gaussian":
-        return np.dot(X, coef) + intercept
+        return X @ coef + intercept
     else:
-        return np.exp(np.dot(X, coef) + intercept)
+        return np.exp(X @ coef + intercept)
 
 
 class FastGlm(BaseEstimator, LinearClassifierMixin):
@@ -70,6 +69,8 @@ class FastGlm(BaseEstimator, LinearClassifierMixin):
         Returns the predicted values.
 
         """
+        if self.family == "binomial":
+            return self.predict_proba(X)
         return _predict_glm(X, self.coef_, self.family, self.intercept_)
 
     def predict_proba(self, X):
@@ -89,7 +90,7 @@ class FastGlm(BaseEstimator, LinearClassifierMixin):
         if self.family == "gaussian":
             raise NotImplemented()
         elif self.family == "binomial":
-            return inverse_logit(np.dot(X, self.coef_) + self.intercept_)
+            return inverse_logit((X @ self.coef_) + self.intercept_)
         elif self.family == "poisson":
             return self
         return self
@@ -150,17 +151,17 @@ class GLM(FastGlm):
     """
 
     def __init__(
-            self,
-            lambda_l1=None,
-            lambda_l2=None,
-            r=1,
-            fit_intercept=True,
-            family="binomial",
-            bounds=None,
-            solver=None,
-            max_iters=10000,
-            tol=1e-8,
-            p_shrinkage=1e-10,
+        self,
+        lambda_l1=None,
+        lambda_l2=None,
+        r=1,
+        fit_intercept=True,
+        family="binomial",
+        bounds=None,
+        solver=None,
+        max_iters=10000,
+        tol=1e-8,
+        p_shrinkage=1e-25,
     ):
 
         self.solver = _check_solver(solver, bounds, lambda_l1)
@@ -185,7 +186,7 @@ class GLM(FastGlm):
         if y.ndim != 2:
             y = y.reshape((len(y), 1))
 
-        coef_ , irls_niter,ccd_niter= fit_irls(
+        coef_, irls_niter, ccd_niter = fit_irls(
             X,
             y,
             family=self._family,
@@ -197,7 +198,7 @@ class GLM(FastGlm):
             max_iters=self.max_iters,
             tol=self.tol,
             p_shrinkage=self.p_shrinkage,
-            solver=self.solver
+            solver=self.solver,
         )
         self.irls_niter_ = irls_niter
         self.ccd_niter_ = ccd_niter
@@ -213,13 +214,14 @@ class GLM(FastGlm):
 
 class SparseGLM(FastGlm):
     def __init__(
-            self,
-            family="binomial",
-            lambda_l2=0,
-            fit_intercept=False,
-            bounds=None,
-            solver="lbfgs",
-            **solver_kwargs
+        self,
+        family="binomial",
+        lambda_l2=0,
+        gamma=None,
+        fit_intercept=False,
+        bounds=None,
+        solver="lbfgs",
+        **solver_kwargs
     ):
         """Generalized linear model for sparse features with L2 penalties. Support box constraints.
 
@@ -240,7 +242,11 @@ class SparseGLM(FastGlm):
             The target family distribution.
 
         lambda_l2 : float, optional
-            The norm 2 penalty parameter "Ridge.
+            The norm 2 penalty parameter "Ridge".
+
+        gamma : array, optional
+            An positive definite matrix for the Tikhonov regularisation.
+
 
         fit_intercept : bool
             Whether the intercept should be estimated or not. Note that the intercept is not regularized.
@@ -263,9 +269,12 @@ class SparseGLM(FastGlm):
         self.solver_kwargs = solver_kwargs
         self.fit_intercept = fit_intercept
         self.lambda_l2 = lambda_l2
+        self.gamma = gamma
+
         self.bounds = bounds if bounds is None else check_array(bounds)
 
-    def fit(self, X, y):
+    def fit(self, X, y, sample_weight=None):
+
         X, y = check_X_y(X, y, ensure_2d=True, accept_sparse="csr", order="C")
 
         if self.fit_intercept:
@@ -279,18 +288,18 @@ class SparseGLM(FastGlm):
                 w0,
                 fprime=None,
                 bounds=self.bounds,
-                args=(X, y, self.family, self.lambda_l2),
+                args=(X, y, self.family, self.lambda_l2, self.gamma, 1, sample_weight),
                 **self.solver_kwargs
             )
             self.info_ = info
 
         elif self.solver == "tcn":
-            coef, nfeval, rc = optimize.fmin_tcn(
+            coef, nfeval, rc = optimize.fmin_tnc(
                 _glm_loss_and_grad,
                 w0,
                 bounds=self.bounds,
                 fprime=None,
-                args=(X, y, self.family, self.lambda_l2),
+                args=(X, y, self.family, self.lambda_l2, self.gamma, 1, sample_weight),
                 **self.solver_kwargs
             )
 

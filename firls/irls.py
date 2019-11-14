@@ -1,8 +1,8 @@
-"""Solve glm with separable constraint using irls."""
+"""Solve glm with separable constraint using irls method."""
 
 
 from numba import njit
-from numba.types import float64, int64, unicode_type, boolean,Tuple,optional
+from numba.types import float64, int64, unicode_type, boolean, Tuple, optional
 import numpy as np
 from firls.ccd import ccd_pwls, add_constant
 
@@ -53,7 +53,7 @@ def fit_irls(
     r=0.0,
     max_iters=1000,
     tol=1e-3,
-    p_shrinkage=1e-10,
+    p_shrinkage=1e-25,
     solver="inv",
 ):
     """
@@ -89,9 +89,9 @@ def fit_irls(
                 )
             else:
                 w = np.linalg.inv(X_tilde.T @ X_tilde) @ X_tilde.T @ z_tilde
-            ccd_niter=0
+            ccd_niter = 0
         elif solver == "ccd":
-            w,ccd_niter = ccd_pwls(
+            w, ccd_niter = ccd_pwls(
                 X,
                 z,
                 W,
@@ -104,21 +104,17 @@ def fit_irls(
                 max_iters=max_iters,
                 tol=tol,
             )
-        if family == "gaussian":
-            return w
 
-        if family=='gaussian': #no need to iterate irls for gaussian family
-            return w,1,ccd_niter
+        if family == "gaussian":  # no need to iterate irls for gaussian family
+            return w, 1, ccd_niter
 
         if fit_intercept:
             mu = np.exp(X @ w[1:] + w[0])
         else:
             mu = np.exp(X @ w)
 
-
         if np.linalg.norm(w_old - w) < tol:
             break
         w_old = w
 
-
-    return w,irls_niter,ccd_niter
+    return w, irls_niter, ccd_niter

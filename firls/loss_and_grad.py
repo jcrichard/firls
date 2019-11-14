@@ -45,7 +45,15 @@ def _intercept_dot(w, X):
 
 
 def _glm_loss_and_grad(
-    w, X, y, familly="binomial", lambda_l2=0, r=1, sample_weight=None, p_shrinkage=1e-6
+    w,
+    X,
+    y,
+    familly="binomial",
+    lambda_l2=0,
+    gamma=None,
+    r=1,
+    sample_weight=None,
+    p_shrinkage=1e-25,
 ):
     """Computes the glm loss and gradient.
     """
@@ -54,33 +62,48 @@ def _glm_loss_and_grad(
 
     w, c, Xw_c = _intercept_dot(w, X)
 
+    if gamma is not None:
+        w_gamma = w * gamma ** 0.5
+    else:
+        w_gamma = w
+        gamma = 1
+
     if sample_weight is None:
         sample_weight = np.ones(n_samples)
 
+    if lambda_l2 > 0:
+        l2_pen = lambda_l2 * np.dot(w_gamma.T, w_gamma)
+        grad_l2_pen = 2 * lambda_l2 * w * gamma
+    else:
+        l2_pen = 0
+        grad_l2_pen = 0
+
     if familly == "gaussian":
         mu = Xw_c
-        out = np.sum(sample_weight * (y - mu) ** 2) + 0.5 * lambda_l2 * np.dot(w.T, w)
+        out = np.sum(sample_weight * (y - mu) ** 2) + 0.5 * l2_pen
         z0 = -sample_weight * (y - mu)
     elif familly == "binomial":
         p = np.maximum(np.minimum(inverse_logit(Xw_c), 1 - p_shrinkage), p_shrinkage)
-        out = -np.sum(
-            sample_weight * (y * np.log(p) + (1 - y) * np.log(1 - p))
-        ) + 0.5 * lambda_l2 * np.dot(w.T, w)
+        out = (
+            -np.sum(sample_weight * (y * np.log(p) + (1 - y) * np.log(1 - p)))
+            + 0.5 * l2_pen
+        )
         z0 = -sample_weight * (y - p)
     elif familly == "poisson":
         mu = np.exp(Xw_c)
-        out = np.sum(sample_weight * (mu - y * Xw_c)) + 0.5 * lambda_l2 * np.dot(w.T, w)
+        out = np.sum(sample_weight * (mu - y * Xw_c)) + 0.5 * l2_pen
         z0 = sample_weight * (mu - y)
     elif familly == "negativebinomial":
         mu = np.exp(Xw_c)
         p = np.maximum(np.minimum(mu / (mu + r), 1 - p_shrinkage), p_shrinkage)
         p_tilde = (y + r) * p
-        out = -np.sum(
-            sample_weight * (y * Xw_c - (y + r) * np.log(r + mu))
-        ) + 0.5 * lambda_l2 * np.dot(w.T, w)
+        out = (
+            -np.sum(sample_weight * (y * Xw_c - (y + r) * np.log(r + mu)))
+            + 0.5 * l2_pen
+        )
         z0 = sample_weight * (p_tilde - y)
 
-    grad[:n_features] = _safe_sparse_product(X.T, z0) + lambda_l2 * w
+    grad[:n_features] = _safe_sparse_product(X.T, z0) + 0.5 * grad_l2_pen
 
     if grad.shape[0] > n_features:
         grad[-1] = z0.sum()
