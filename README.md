@@ -32,7 +32,7 @@ The package subclass BaseEstimator and LinearClassifierMixin and is usable with 
 
 Dependencies
 ------------
-There is three main decencies: [numpy](http://www.numpy.org/), [scipy](http://www.scipy.org/) and  [numba](https://numba.pydata.org/).
+There is three main dependencies: [numpy](http://www.numpy.org/), [scipy](http://www.scipy.org/) and  [numba](https://numba.pydata.org/).
 To use the [scikit-learn](https://scikit-learn.org/stable/) API you will need to install it!
 
 
